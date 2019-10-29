@@ -1,17 +1,42 @@
 <template>
-  <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <div id="app" class="container">
+    <b-row>
+      <b-form-input v-model="host" type="url" placeholder="Host" class="col-6" :state="hostState"></b-form-input>
+      <b-form-checkbox v-model="auth" class="col-2">Authorization</b-form-checkbox>
+      <b-button class="col-4" variant="primary">Connect</b-button>
+    </b-row>
+
+    <b-row>
+      <p>Status: <span :class="isConnected ? 'text-success' : 'text-danger'">{{isConnected ? 'Connected' : 'Disconnected'}}</span></p>
+    </b-row>
   </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
-
+  import {Client} from '@hapi/nes/lib/client';
 export default {
   name: 'app',
   components: {
-    HelloWorld
+
+  },
+  data() {
+    return{
+      host: '',
+      auth: false,
+      authSettings: {},
+      isConnected: false,
+      history: [],
+      nes: null
+    }
+  },
+  computed: {
+    hostState: () => {return this.host.match(/^ws(s)?:\/\/[\w\d.]*(:[\d]{1,5})?(\/.*)*$/)}
+  },
+  methods: {
+    nesConnect: () => {
+      this.data.nes = new Client(this.data.host);
+
+    }
   }
 }
 </script>
