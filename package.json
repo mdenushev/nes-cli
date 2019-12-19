@@ -14,6 +14,7 @@
     "bootstrap-vue": "^2.0.4",
     "core-js": "^3.3.2",
     "jsoneditor": "^7.2.1",
+    "v-jsoneditor": "^1.2.3",
     "vue": "^2.6.10"
   },
   "devDependencies": {
