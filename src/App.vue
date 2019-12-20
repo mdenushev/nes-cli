@@ -15,7 +15,7 @@
           'Disconnected'}}
       </span></p>
     </b-row>
-    <b-row>
+    <b-row v-if="isConnected">
       <b-col cols="6">
         <b-input-group>
           <b-input-group-prepend>
@@ -33,30 +33,45 @@
       </b-col>
     </b-row>
 
-    <b-row class="mt-2">
+    <b-row class="mt-2" v-if="isConnected">
       <!--Subscriptions-->
-      <b-col cols="2">
-        <b-list-group>
-          <b-list-group-item v-for="subscription in Object.values(subscriptions)" :key="subscription.path"
-                             class="d-flex justify-content-between align-items-center">
-            {{subscription.path}}
-            <b-badge variant="primary" pill>{{subscriptionCountMessages(subscription.path)}}</b-badge>
-          </b-list-group-item>
-        </b-list-group>
-      </b-col>
+<!--      <b-col cols="2">-->
+<!--        <b-list-group>-->
+<!--          <b-list-group-item v-for="subscription in Object.values(subscriptions)" :key="subscription.path"-->
+<!--                             class="d-flex justify-content-between align-items-center">-->
+<!--            {{subscription.path}}-->
+<!--            <b-badge variant="primary" pill>{{subscriptionCountMessages(subscription.path)}}</b-badge>-->
+<!--          </b-list-group-item>-->
+<!--        </b-list-group>-->
+<!--      </b-col>-->
       <!--Input-->
-      <b-col cols="3"><VJsoneditor v-model="input"/></b-col>
+      <b-col cols="4">
+        <span>Payload</span>
+        <VJsoneditor v-model="input" height="500px" :options="{mode: 'code'}"/>
+      </b-col>
       <!--Output-->
-      <b-col cols="4"><VJsoneditor v-model="output"/></b-col>
+      <b-col cols="5">
+        <span>Result</span>
+        <VJsoneditor v-model="output" height="500px" :options="{mode: 'code', onEditable: (node) => false}"/>
+      </b-col>
       <!--History-->
       <b-col cols="3" class=" mh-100">
+        <span>History</span>
+
         <b-list-group>
+          <b-list-group-item v-if="history.length === 0">No records.</b-list-group-item>
           <b-list-group-item
             v-for="(record, i) in history"
+            @click="changeCurrentRecord(i)"
             :key="i"
             class="d-flex justify-content-between align-items-center"
-
-            :variant="record.type === 'subscription' ? 'warning' : 'secondary'"
+            :variant="
+             i === currentRecord
+              ? 'success'
+              : record.type === 'subscription'
+                ? 'warning'
+                : 'secondary'
+            "
           >
             <span>{{record.path}}</span>
             <span class="text">{{getDateString(record.date)}}</span>
@@ -90,14 +105,26 @@
                 output: null,
                 method: 'GET',
                 methods: ['GET', 'POST', 'PUT', 'DELETE'],
-                connectionError: null
+                connectionError: null,
+                currentRecord: 0
+            }
+        },
+        watch: {
+            currentRecord: function(val) {
+                if(this.history[val].type === 'record'){
+                    this.$set(this, 'input', this.history[val].input);
+                    this.$set(this, 'output', this.history[val].output);
+                } else if (this.history[val].type === 'subscription'){
+                    this.$set(this, 'input', {});
+                    this.$set(this, 'output', this.history[val].data);
+                }
+
             }
         },
         computed: {
             hostState: function () {
                 return this.host.match(/^ws(s)?:\/\/[\w\d.]*(:[\d]{1,5})?(\/.*)*$/) !== null
-            },
-
+            }
         },
         methods: {
             getDateString: function (date) {
@@ -106,10 +133,15 @@
             subscriptionCountMessages: function (path) {
                 return this.history.filter(rec => rec.type === 'subscription' && rec.path === path).length
             },
+            changeCurrentRecord: function(i){
+                this.$set(this, 'currentRecord', i);
+            },
             handleSubscription: function (update, flags, path) {
+                // eslint-disable-next-line no-console
+                console.log(path);
                 this.history.unshift({
                     type: 'subscription',
-                    data: update ? update.payload : null,
+                    data: update ? update : {},
                     raw: {update, flags},
                     path,
                     date: new Date()
@@ -130,6 +162,7 @@
             },
             nesSend: function (){
                 let self = this;
+                this.$set(this, 'output', null);
                 this.nes.request({
                     path: this.url,
                     method: this.method,
@@ -141,26 +174,37 @@
                     self.history.unshift({
                         type: 'request',
                         method: self.method,
-                        input: self.input,
+                        input: self.input !== null ? self.input: {},
                         path: self.url,
-                        output: res.payload,
+                        output: res.payload !== null ? res.payload: {},
                         status: res.statusCode,
                         date: new Date()
-                    })
+                    });
+                    self.$set(self, 'currentRecord', 0);
+                }).catch(err => {
+                    // eslint-disable-next-line no-console
+                    this.showToast('danger', err.message, 'Error')
                 })
             },
-            nesSubscribe: async function () {
-                await this.nes.subscribe(this.url, (update, flags) => {
+            nesSubscribe: function () {
+                // let path = this.url;
+                this.nes.subscribe(this.url, (update, flags, path = this.url) => {this.handleSubscription(update, flags, path)})
+                .then(() => {
                     // eslint-disable-next-line no-console
-                    console.log(update);
-                    this.handleSubscription(update, flags, this.url)
-                }).then(() => {
-                    // eslint-disable-next-line no-console
-                    this.$set(this.subscriptions, this.url, {path: this.url})
+                    this.$set(this.subscriptions, this.url, {path: this.url});
+                    this.showToast('success', `Subscribed on path ${this.url}`,'Subscribed successfully')
+                }).catch(err => {
+                    this.showToast('danger', 'Error: ' + err.message, 'Subscription failed');
                 })
             },
-            nesSubscriptionHandler() {
-
+            showToast: function(variant, msg, title){
+                this.$bvToast.toast(msg, {
+                    title: title,
+                    variant: variant,
+                    solid: true,
+                    appendToast: true,
+                    toaster: 'b-toaster-bottom-right'
+                })
             }
         }
     }
