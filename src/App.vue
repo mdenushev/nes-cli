@@ -2,8 +2,8 @@
   <div id="app" class="container">
     <b-row align-v="center">
       <b-form-input class="col-6" v-model="host" type="url" placeholder="Host" :state="hostState">Host</b-form-input>
-      <b-form-checkbox v-model="auth" class="col-2">Authorization</b-form-checkbox>
-      <b-button class="col-4" variant="primary" @click="nesConnect">Connect</b-button>
+      <b-form-checkbox v-model="auth" class="col-2" :disabled="isConnected">Authorization</b-form-checkbox>
+      <b-button class="col-4" variant="primary" @click="nesConnect" :disabled="isConnected">Connect</b-button>
     </b-row>
 
     <b-row>
@@ -14,6 +14,10 @@
           connectionError :
           'Disconnected'}}
       </span></p>
+    </b-row>
+    <b-row v-if="auth && !isConnected">
+      <span>Authorization information</span>
+
     </b-row>
     <b-row v-if="isConnected">
       <b-col cols="6">
@@ -34,16 +38,6 @@
     </b-row>
 
     <b-row class="mt-2" v-if="isConnected">
-      <!--Subscriptions-->
-<!--      <b-col cols="2">-->
-<!--        <b-list-group>-->
-<!--          <b-list-group-item v-for="subscription in Object.values(subscriptions)" :key="subscription.path"-->
-<!--                             class="d-flex justify-content-between align-items-center">-->
-<!--            {{subscription.path}}-->
-<!--            <b-badge variant="primary" pill>{{subscriptionCountMessages(subscription.path)}}</b-badge>-->
-<!--          </b-list-group-item>-->
-<!--        </b-list-group>-->
-<!--      </b-col>-->
       <!--Input-->
       <b-col cols="4">
         <span>Payload</span>
@@ -111,7 +105,7 @@
         },
         watch: {
             currentRecord: function(val) {
-                if(this.history[val].type === 'record'){
+                if(this.history[val].type === 'request'){
                     this.$set(this, 'input', this.history[val].input);
                     this.$set(this, 'output', this.history[val].output);
                 } else if (this.history[val].type === 'subscription'){
@@ -187,8 +181,8 @@
                 })
             },
             nesSubscribe: function () {
-                // let path = this.url;
-                this.nes.subscribe(this.url, (update, flags, path = this.url) => {this.handleSubscription(update, flags, path)})
+                let path = this.url;
+                this.nes.subscribe(this.url, (update, flags) => {this.handleSubscription(update, flags, path)})
                 .then(() => {
                     // eslint-disable-next-line no-console
                     this.$set(this.subscriptions, this.url, {path: this.url});
