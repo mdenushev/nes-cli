@@ -1,5 +1,9 @@
 # nes-client
 
+Simple utility to use @hapi/nes.
+
+Try: https://mdenushev.github.io/nes-cli/ 
+
 ## Project setup
 ```
 npm install
@@ -20,5 +24,3 @@ npm run build
 npm run lint
 ```
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
