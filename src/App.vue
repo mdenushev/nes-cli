@@ -4,7 +4,7 @@
             <b-form-input class="col-6" v-model="host" type="url" placeholder="Host" :state="hostState">Host
             </b-form-input>
             <b-form-checkbox v-model="auth" class="col-2" :disabled="isConnected">Authorization</b-form-checkbox>
-            <b-button class="col-4" variant="primary" @click="() => !isConnected ? nesConnect() : nesDisconnect">{{!isConnected ? 'Connect' : 'Disconnect'}}</b-button>
+            <b-button class="col-4" variant="primary" @click="connectButtonOnClick">{{!isConnected ? 'Connect' : 'Disconnect'}}</b-button>
         </b-row>
 
         <b-row>
@@ -126,6 +126,13 @@
       }
     },
     methods: {
+      connectButtonOnClick: function() {
+        if(! this.isConnected){
+          this.nesConnect();
+        } else {
+          this.nesDisconnect();
+        }
+      },
       getDateString: function (date) {
         return `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}.${date.getMilliseconds()}`
       },
@@ -151,22 +158,23 @@
         let self = this;
 
         this.nes.connect({auth: this.authSettings}).then(() => {
-          self.isConnected = true;
-          self.connectionError = null;
+          self.$set(self, 'isConnected', true);
+          self.$set(self, 'connectionError', null);
           self.showToast('light', 'Connected successfully', '')
         }).catch(err => {
-          self.connectionError = err.message;
-          self.isConnected = false
+          self.$set(self, 'connectionError', err.message);
+          self.$set(self, 'isConnected', false);
           self.showToast('danger', err, 'Connection error')
         });
         return true
       },
       nesDisconnect: function() {
         let self = this;
-
+        // eslint-disable-next-line no-console
+        console.log('disconnect');
         this.nes.disconnect().then(() => {
-          self.isConnected = false;
-          self.connectionError = null;
+          self.$set(self, 'isConnected', false);
+          self.$set(self, 'connectionError', null);
           self.showToast('light', 'Disconnected successfully', '')
         }).catch(e => {
           self.showToast('danger', e, 'Disconnection error')
