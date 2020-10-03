@@ -122,7 +122,7 @@
     },
     computed: {
       hostState: function () {
-        return this.host.match(/^ws(s)?:\/\/[\w\d.]*(:[\d]{1,5})?(\/.*)*$/) !== null
+        return this.host.match(/^ws(s)?:\/\/[\w\d.-]*(:[\d]{1,5})?(\/.*)*$/) !== null
       }
     },
     methods: {
@@ -145,6 +145,7 @@
       handleSubscription: function (update, flags, path) {
         // eslint-disable-next-line no-console
         console.log(path);
+        this.$set(this,'currentRecord', this.currentRecord + 1);
         this.history.unshift({
           type: 'subscription',
           data: update ? update : {},
