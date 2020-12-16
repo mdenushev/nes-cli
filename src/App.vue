@@ -50,10 +50,10 @@
                 <VJsoneditor v-model="output" height="500px" :options="{mode: 'code', onEditable: () => false}"/>
             </b-col>
             <!--History-->
-            <b-col cols="3" class="history mh-100">
+            <b-col cols="3">
                 <span>History</span>
 
-                <b-list-group>
+                <b-list-group class="history">
                     <b-list-group-item v-if="history.length === 0">No records.</b-list-group-item>
                     <b-list-group-item
                             v-for="(record, i) in history"
