@@ -50,7 +50,7 @@
                 <VJsoneditor v-model="output" height="500px" :options="{mode: 'code', onEditable: () => false}"/>
             </b-col>
             <!--History-->
-            <b-col cols="3" class=" mh-100">
+            <b-col cols="3" class="history mh-100">
                 <span>History</span>
 
                 <b-list-group>
@@ -241,5 +241,9 @@
         text-align: center;
         color: #2c3e50;
         margin-top: 60px;
+    }
+    .history {
+      max-height: 500px;
+      overflow-y: scroll;
     }
 </style>
