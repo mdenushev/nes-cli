@@ -81,6 +81,12 @@
   import VJsoneditor from 'v-jsoneditor/src/index'
   import {Client} from '@hapi/nes/lib/client';
 
+  function pad(n, width, z) {
+    z = z || '0';
+    n = n + '';
+    return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
+  }
+
   export default {
     name: 'app',
     components: {
@@ -134,7 +140,10 @@
         }
       },
       getDateString: function (date) {
-        return `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}.${date.getMilliseconds()}`
+        return `${pad(date.getHours(), 2)}:`+
+            `${pad(date.getMinutes(), 2)}:`+
+            `${pad(date.getSeconds(), 2)}.`+
+            `${pad(date.getMilliseconds(), 3)}`
       },
       subscriptionCountMessages: function (path) {
         return this.history.filter(rec => rec.type === 'subscription' && rec.path === path).length
@@ -143,9 +152,11 @@
         this.$set(this, 'currentRecord', i);
       },
       handleSubscription: function (update, flags, path) {
-        // eslint-disable-next-line no-console
-        console.log(path);
         this.$set(this,'currentRecord', this.currentRecord + 1);
+        if (this.history.length === 0){
+          this.$set(this, 'input', {});
+          this.$set(this, 'output', update ? update : {});
+        }
         this.history.unshift({
           type: 'subscription',
           data: update ? update : {},
@@ -189,8 +200,6 @@
           method: this.method,
           payload: this.input
         }).then((res) => {
-          // eslint-disable-next-line no-console
-          console.log(res);
           self.$set(self, 'output', res.payload);
           self.history.unshift({
             type: 'request',
@@ -203,7 +212,6 @@
           });
           self.$set(self, 'currentRecord', 0);
         }).catch(err => {
-          // eslint-disable-next-line no-console
           this.showToast('danger', err.message, 'Error')
         })
       },
