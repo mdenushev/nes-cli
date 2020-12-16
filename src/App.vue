@@ -156,6 +156,7 @@
         if (this.history.length === 0){
           this.$set(this, 'input', {});
           this.$set(this, 'output', update ? update : {});
+          this.$set(this,'currentRecord', 0);
         }
         this.history.unshift({
           type: 'subscription',
