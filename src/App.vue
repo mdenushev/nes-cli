@@ -1,7 +1,7 @@
 <template>
     <div id="app" class="container">
         <b-row align-v="center">
-            <b-form-input class="col-6" v-model="host" type="url" placeholder="Host" :state="hostState">Host
+            <b-form-input class="col-6" v-model="host" type="url" placeholder="Host" :state="hostState" :disabled="isConnected">Host
             </b-form-input>
             <b-form-checkbox v-model="auth" class="col-2" :disabled="isConnected">Authorization</b-form-checkbox>
             <b-button class="col-4" variant="primary" @click="connectButtonOnClick">{{!isConnected ? 'Connect' : 'Disconnect'}}</b-button>
@@ -51,7 +51,7 @@
             </b-col>
             <!--History-->
             <b-col cols="3">
-                <span>History</span>
+                <p>History <b-link @click="clearHistory" size="sm">Clear</b-link></p>
 
                 <b-list-group class="history">
                     <b-list-group-item v-if="history.length === 0">No records.</b-list-group-item>
@@ -93,8 +93,12 @@
       VJsoneditor
     },
     data() {
+      // eslint-disable-next-line no-undef
+      const lastHost = getCookie('last_host')
+      // eslint-disable-next-line no-undef
+      const lastUrl = getCookie('last_url')
       return {
-        host: 'wss://example.com/api',
+        host: lastHost ? lastHost : 'wss://example.com/api',
         auth: false,
         authSettings: {
           "headers": {
@@ -105,7 +109,7 @@
         history: [],
         subscriptions: {},
         nes: null,
-        url: '/items',
+        url: lastUrl ? lastUrl : '/items',
         input: null,
         output: null,
         method: 'GET',
@@ -116,14 +120,18 @@
     },
     watch: {
       currentRecord: function (val) {
-        if (this.history[val].type === 'request') {
-          this.$set(this, 'input', this.history[val].input);
-          this.$set(this, 'output', this.history[val].output);
-        } else if (this.history[val].type === 'subscription') {
+        if (this.history[val]){
+          if (this.history[val].type === 'request') {
+            this.$set(this, 'input', this.history[val].input);
+            this.$set(this, 'output', this.history[val].output);
+          } else if (this.history[val].type === 'subscription') {
+            this.$set(this, 'input', {});
+            this.$set(this, 'output', this.history[val].data);
+          }
+        } else {
           this.$set(this, 'input', {});
-          this.$set(this, 'output', this.history[val].data);
+          this.$set(this, 'output', {});
         }
-
       }
     },
     computed: {
@@ -171,6 +179,8 @@
         let self = this;
 
         this.nes.connect({auth: this.authSettings}).then(() => {
+          // eslint-disable-next-line no-undef
+          setCookie("last_host", this.host)
           self.$set(self, 'isConnected', true);
           self.$set(self, 'connectionError', null);
           self.showToast('light', 'Connected successfully', '')
@@ -201,6 +211,8 @@
           method: this.method,
           payload: this.input
         }).then((res) => {
+          // eslint-disable-next-line no-undef
+          setCookie('last_url', this.url)
           self.$set(self, 'output', res.payload);
           self.history.unshift({
             type: 'request',
@@ -222,7 +234,8 @@
           this.handleSubscription(update, flags, path)
         })
           .then(() => {
-            // eslint-disable-next-line no-console
+            // eslint-disable-next-line no-undef
+            setCookie('last_url', this.url)
             this.$set(this.subscriptions, this.url, {path: this.url});
             this.showToast('success', `Subscribed on path ${this.url}`, 'Subscribed successfully')
           }).catch(err => {
@@ -237,6 +250,10 @@
           appendToast: true,
           toaster: 'b-toaster-bottom-right'
         })
+      },
+      clearHistory: function (){
+        this.$set(this, 'history', []);
+        this.$set(this, 'currentRecord', 0);
       }
     }
   }
